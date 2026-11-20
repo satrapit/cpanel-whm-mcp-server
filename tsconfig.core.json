@@ -1,0 +1,5 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": { "outDir": "dist-core" },
+  "include": ["src/security/**/*.ts", "src/connections/**/*.ts", "src/providers/**/*.ts", "src/capabilities/**/*.ts"]
+}

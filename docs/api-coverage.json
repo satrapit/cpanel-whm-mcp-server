@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "inventory_scope": "selected seed functions only",
+  "upstream_docs_version": "138",
+  "capabilities": [
+    {
+      "id": "cpanel.domains.list",
+      "family": "cpanel-uapi",
+      "module": "DomainInfo",
+      "function": "list_domains",
+      "method": "GET",
+      "path": "/execute/DomainInfo/list_domains",
+      "docs": "https://api.docs.cpanel.net/specifications/cpanel.openapi/",
+      "required_parameters": [],
+      "optional_parameters": "not fully verified",
+      "request_schema": "none for current adapter",
+      "response_schema": "UAPI envelope, data.main_domain and domain lists",
+      "privileges": "account-level access; exact feature requirements unknown",
+      "user_types": [
+        "cpanel-end-user"
+      ],
+      "minimum_version": "unknown",
+      "feature_requirements": "unknown",
+      "availability_restrictions": "unknown",
+      "risk": [
+        "READ"
+      ],
+      "documented": true,
+      "adapter_present": true,
+      "published_mcp": true,
+      "enabled_for_user": false,
+      "synthetic_contract_tested": true,
+      "real_server_tested": false,
+      "deprecated": false,
+      "replaced_by": null,
+      "verified_docs_on": "2026-11-20",
+      "introduced_in_app_version": "0.1.0-alpha.1 (unreleased)"
+    },
+    {
+      "id": "whm.accounts.list",
+      "family": "whm-api-1",
+      "module": "Account Management",
+      "function": "listaccts",
+      "method": "GET",
+      "path": "/json-api/listaccts",
+      "docs": "https://api.docs.cpanel.net/specifications/whm.openapi/account-management/accounts-listaccts",
+      "required_parameters": [
+        "api.version=1"
+      ],
+      "optional_parameters": [
+        "api.chunk.enable",
+        "api.chunk.size",
+        "api.chunk.start",
+        "api.columns.enable",
+        "api.columns.a",
+        "api.columns.b"
+      ],
+      "request_schema": "pagination restricted to first 20 accounts",
+      "response_schema": "metadata with data.acct entries; user/domain only",
+      "privileges": "server-side account listing ACL; exact reseller constraints require verification",
+      "user_types": [
+        "whm-reseller",
+        "whm-administrator"
+      ],
+      "minimum_version": "unknown",
+      "feature_requirements": "unknown",
+      "availability_restrictions": "unknown",
+      "risk": [
+        "READ"
+      ],
+      "documented": true,
+      "adapter_present": true,
+      "published_mcp": true,
+      "enabled_for_user": false,
+      "synthetic_contract_tested": true,
+      "real_server_tested": false,
+      "deprecated": false,
+      "replaced_by": null,
+      "verified_docs_on": "2026-11-20",
+      "introduced_in_app_version": "0.1.0-alpha.1 (unreleased)"
+    }
+  ]
+}

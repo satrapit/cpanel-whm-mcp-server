@@ -1,0 +1,39 @@
+{
+  "name": "cpanel-whm-mcp-server",
+  "version": "0.1.0-alpha.1",
+  "private": true,
+  "type": "module",
+  "license": "UNLICENSED",
+  "description": "Security-first MCP resource server foundation for cPanel UAPI and WHM API 1",
+  "engines": { "node": ">=24.0.0" },
+  "packageManager": "pnpm@10.20.0",
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/main.js",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "lint": "eslint .",
+    "format:check": "prettier --check .",
+    "format": "prettier --write .",
+    "audit": "pnpm audit --audit-level high"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/server": "2.4.0",
+    "@modelcontextprotocol/fastify": "2.0.1",
+    "@modelcontextprotocol/node": "2.1.2",
+    "fastify": "5.12.8",
+    "jose": "6.2.18",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "24.10.1",
+    "@typescript-eslint/eslint-plugin": "8.46.0",
+    "@typescript-eslint/parser": "8.46.0",
+    "eslint": "9.39.1",
+    "prettier": "3.6.2",
+    "tsx": "4.20.6",
+    "typescript": "7.0.2",
+    "vitest": "5.1.1"
+  }
+}
