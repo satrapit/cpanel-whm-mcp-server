@@ -12,7 +12,7 @@ Build and maintain a secure, open-source MCP server for authorized management of
 Never claim absolute security, complete API coverage, production readiness or successful tests without evidence.
 
 ## Technology baseline
-- Node.js active LTS; TypeScript strict mode (no unreviewed `any`), ESM, pnpm and pinned lockfile.
+- Node.js active LTS; TypeScript strict mode (no unreviewed `any`), pnpm and pinned lockfile. Design source modules with standard imports/exports; for the proven cPanel Passenger target, build and validate a CommonJS-compatible runtime entry until native ESM loading is repaired and verified.
 - MCP TypeScript SDK v2 (`@modelcontextprotocol/server`) with Streamable HTTP; inspect current official examples and verify adapter versions before coding.
 - Fastify, Zod, Pino, Prisma and MySQL/MariaDB for the current cPanel deployment target; PostgreSQL may be supported as an alternate database where available. Verify driver and migration compatibility.
 - Prefer a modular monolith with independent MCP transport, application services, authentication/authorization, capability registry, providers, adapters and persistence.
@@ -51,7 +51,7 @@ Never claim absolute security, complete API coverage, production readiness or su
 - Pin dependencies, commit lockfiles, version database migrations, and explain rollback/upgrade procedures.
 - Use conventional commit messages. Keep `main` deployable; use focused pull requests for substantial work and do not force-push main.
 - No production deployment or access to real cPanel/WHM servers without explicit user authorization. Do not commit secrets.
-- cPanel Passenger deployments must keep a minimal, reliable bootstrap. See docs/HOSTING.md for verified constraints. Temporary bearer-token hosting probes must never be represented as production OAuth authorization.
+- cPanel Passenger deployments must keep a minimal, reliable bootstrap. An MCP v3.9 probe verified CommonJS SDK loading, the protocol roundtrip and Redis socket PING on the deployment target; production cPanel/WHM operations remain unverified. See docs/HOSTING.md for verified constraints. Temporary bearer-token hosting probes must never be represented as production OAuth authorization.
 
 ## Source-of-truth references
 - https://api.docs.cpanel.net/
