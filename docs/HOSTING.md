@@ -31,6 +31,16 @@ Source: https://ts.sdk.modelcontextprotocol.io/v2/migration/support-2026-07-28
 
 The temporary hosting probe is not a production integration. Its bearer token is **not** an OAuth implementation. Before exposing an operational MCP endpoint publicly, implement proper OAuth resource-server checks, precise scopes, per-tenant authorization and rate limits.
 
+### Optional Redis / Valkey cache validation
+
+CloudLinux PHP Selector's `redis` extension is a PHP client module, **not** evidence of a running Redis service. On compatible cPanel / LiteSpeed hosting, **LiteSpeed Redis Cache Manager** can create an isolated Redis (or Valkey) service for the cPanel account. This is distinct from LiteSpeed's HTTP page cache.
+
+LiteSpeed documents per-account Unix sockets for CloudLinux and LiteSpeed Containers: `/tmp/redis.sock` when viewed from within the sandbox, with CloudLinux's underlying path usually under `$HOME/.cagefs/tmp/redis.sock`. Verify the actual socket visibility and permissions from the **Node.js Passenger process**, not just from PHP. The Node.js client does not require the PHP extension. Reference: https://docs.litespeedtech.com/lsws/cp/cpanel/whm-litespeed-plugin/wp-cache-management/#how-it-works
+
+Probe v3.9 adds optional `POST /diagnostics/redis` under the temporary bearer and Host/Origin protections. It performs one read-only Redis/Valkey `PING` over a local Unix socket, defaulting to `/tmp/redis.sock`; set `REDIS_SOCKET_PATH` when needed. It uses only Node.js built-ins, never connects to arbitrary TCP hosts, and never writes, deletes or flushes cache keys. Socket-not-found or permission-denied does not imply Redis is absent on the server; the app's isolation context may differ.
+
+**Redis is optional for the alpha MCP milestone.** Do not enable caching for authentication decisions or security-sensitive tokens without a reviewed design. Do not claim Redis readiness until a successful live `PING` from Node.js. Redis or Valkey daemon status, persistence, security policy and production cache semantics require separate verification.
+
 ### MCP SDK version compatibility and diagnostic findings
 
 The temporary cPanel probe uses Node.js v22, Passenger, a CommonJS `app.js` bootstrap, `@modelcontextprotocol/server@2.3.1` and `@modelcontextprotocol/node@2.1.1`. The actual cPanel installation reports that both SDK packages are installed with ESM entry files present, yet `import()` fails. This is still an unresolved runtime issue; do not claim a root cause.
