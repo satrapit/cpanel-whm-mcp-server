@@ -31,6 +31,12 @@ Source: https://ts.sdk.modelcontextprotocol.io/v2/migration/support-2026-07-28
 
 The temporary hosting probe is not a production integration. Its bearer token is **not** an OAuth implementation. Before exposing an operational MCP endpoint publicly, implement proper OAuth resource-server checks, precise scopes, per-tenant authorization and rate limits.
 
+### MCP SDK version compatibility
+
+As of 2026-11-22, the npm publication for `@modelcontextprotocol/server@2.4.0` has a reported missing `dist/index.mjs` ESM entry (upstream issue [#3166](https://github.com/modelcontextprotocol/typescript-sdk/issues/3166)). A hosting probe using this version could not dynamically import the server or Node adapter, while other dependencies loaded correctly. This is a plausible upstream packaging cause; the server's actual raw error has not been independently captured.
+
+For the temporary compatibility probe, use **exact** `@modelcontextprotocol/server@2.3.1` and `@modelcontextprotocol/node@2.1.1` with `@modelcontextprotocol/core` pinned to `2.3.1` where applicable, and reinstall dependencies via cPanel's Node.js UI. Do not manually edit files under `node_modules`. Confirm actual imported versions and full `initialize` / `tools/list` / `tools/call` before declaring compatibility. Re-evaluate versions against upstream security advisories before any production release.
+
 ### Security and operational validation
 
 1. Confirm that Node.js starts under Passenger.
