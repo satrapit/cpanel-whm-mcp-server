@@ -31,11 +31,15 @@ Source: https://ts.sdk.modelcontextprotocol.io/v2/migration/support-2026-07-28
 
 The temporary hosting probe is not a production integration. Its bearer token is **not** an OAuth implementation. Before exposing an operational MCP endpoint publicly, implement proper OAuth resource-server checks, precise scopes, per-tenant authorization and rate limits.
 
-### MCP SDK version compatibility
+### MCP SDK version compatibility and diagnostic findings
 
-As of 2026-11-22, the npm publication for `@modelcontextprotocol/server@2.4.0` has a reported missing `dist/index.mjs` ESM entry (upstream issue [#3166](https://github.com/modelcontextprotocol/typescript-sdk/issues/3166)). A hosting probe using this version could not dynamically import the server or Node adapter, while other dependencies loaded correctly. This is a plausible upstream packaging cause; the server's actual raw error has not been independently captured.
+The temporary cPanel probe uses Node.js v22, Passenger, a CommonJS `app.js` bootstrap, `@modelcontextprotocol/server@2.3.1` and `@modelcontextprotocol/node@2.1.1`. The actual cPanel installation reports that both SDK packages are installed with ESM entry files present, yet `import()` fails. This is still an unresolved runtime issue; do not claim a root cause.
 
-For the temporary compatibility probe, use **exact** `@modelcontextprotocol/server@2.3.1` and `@modelcontextprotocol/node@2.1.1` with `@modelcontextprotocol/core` pinned to `2.3.1` where applicable, and reinstall dependencies via cPanel's Node.js UI. Do not manually edit files under `node_modules`. Confirm actual imported versions and full `initialize` / `tools/list` / `tools/call` before declaring compatibility. Re-evaluate versions against upstream security advisories before any production release.
+An upstream report about a missing `dist/index.mjs` in server v2.4.0 ([issue #3166](https://github.com/modelcontextprotocol/typescript-sdk/issues/3166)) was **closed after the reporter identified a stale npx cache**. Do not treat that report as evidence of a confirmed publisher regression. Pinning older versions alone did not resolve our hosting failure.
+
+Diagnostic probe v3.8 tests both the ESM `import()` and CommonJS `require()` export conditions, prefers a working ESM loader and falls back to CJS where available. Error diagnostics are redacted by category and include neither original error messages nor private filesystem paths. The full `initialize` / `tools/list` / `tools/call` sequence remains **unverified** until a successful real hosting test.
+
+The public hosting hostname for the current diagnostic target is `mcp-test2.arsamnet.com`; set `PROBE_PUBLIC_HOST` explicitly for Host/Origin validation. Temporary bearer tokens are not OAuth.
 
 ### Security and operational validation
 
