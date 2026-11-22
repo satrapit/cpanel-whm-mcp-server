@@ -22,7 +22,7 @@ The repository is in initial architecture/bootstrap stage. **No production-ready
 See [AGENTS.md](AGENTS.md) for engineering rules and source references.
 
 ## Getting started
-Development scaffolding and local setup instructions will be added as part of the first tested implementation milestone.
+See [Hosting and deployment](docs/HOSTING.md) for the confirmed cPanel/Passenger and MySQL/MariaDB environment and the verification gates. Application scaffolding is still pending.
 
 ## Versioning
 Semantic Versioning and [CHANGELOG.md](CHANGELOG.md) are used from the first development version. The roadmap starts with `v0.1.0-alpha.1` and progresses to broader functionality only after security and test gates are satisfied.
