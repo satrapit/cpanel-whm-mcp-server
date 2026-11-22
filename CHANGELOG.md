@@ -8,6 +8,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 ### Added
 - Initial repository engineering instructions and product scope.
 - Initial development roadmap for a secure, read-only MCP foundation.
+- Documented verified cPanel/Passenger and MariaDB TLS hosting requirements; MCP SDK execution remains pending.
 
 ## Planned: [0.1.0-alpha.1]
 - Strict TypeScript project scaffolding and reproducible local development.
