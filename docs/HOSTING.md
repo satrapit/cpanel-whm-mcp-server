@@ -2,7 +2,7 @@
 
 ## Supported deployment target
 
-The initial hosting target is a cPanel/CloudLinux Node.js Selector application using Phusion Passenger. Verified diagnostics on a reference server have demonstrated Node.js 22/24 startup via a CommonJS `app.js`, HTTPS GET/POST routing, temporary bearer-header forwarding, and MariaDB 10.11 connectivity with certificate-verified TLS. These findings do **not** establish production readiness or successful MCP SDK operation.
+The initial hosting target is a cPanel/CloudLinux Node.js Selector application using Phusion Passenger. Verified diagnostics on a reference server have demonstrated Node.js 22/24 startup via a CommonJS `app.js`, HTTPS GET/POST routing, temporary bearer-header forwarding, and MariaDB 10.11 connectivity with certificate-verified TLS. The live v3.9 probe also verified the full MCP SDK protocol roundtrip using a bounded test-only tool. These findings do **not** establish production readiness, OAuth compliance, or live cPanel/WHM operations.
 
 ### Packaging
 
@@ -39,9 +39,9 @@ LiteSpeed documents per-account Unix sockets for CloudLinux and LiteSpeed Contai
 
 Probe v3.9 adds optional `POST /diagnostics/redis` under the temporary bearer and Host/Origin protections. It performs one read-only Redis/Valkey `PING` over a local Unix socket, defaulting to `/tmp/redis.sock`; set `REDIS_SOCKET_PATH` when needed. It uses only Node.js built-ins, never connects to arbitrary TCP hosts, and never writes, deletes or flushes cache keys. Socket-not-found or permission-denied does not imply Redis is absent on the server; the app's isolation context may differ.
 
-**Live probe outcome (2026-11-22, v3.9):** The Node.js 22.23.5 cPanel Passenger app passed MCP `initialize`, `tools/list`, `tools/call` (`MCP_SDK_END_TO_END_OK_V3_9`), MySQL authenticated `SELECT 1`, and upstream 2083/2087 TLS verification. Both MCP SDK packages loaded successfully via CommonJS; ESM imports failed. Redis `PING` returned `REDIS_SOCKET_NOT_FOUND` for the default `/tmp/redis.sock` path; no claim of Redis service absence or readiness is warranted. Next verify the per-user LiteSpeed Redis service is **enabled**, inspect the actual socket path and its visibility in the same Node.js application account, and retry with `REDIS_SOCKET_PATH` if a correct accessible path is confirmed. Do not loosen socket permissions or expose TCP Redis to the Internet.
+**Live probe outcome (2026-11-22, v3.9, after enabling Redis Cache Manager):** Node.js 22.23.5 and Passenger passed HTTPS health, test bearer verification, MCP SDK readiness and end-to-end `initialize`, `tools/list`, `tools/call` (`MCP_SDK_END_TO_END_OK_V3_9`), MariaDB 10.11 authenticated `SELECT 1`, and upstream cPanel/WHM TLS verification on ports 2083/2087. Redis was initially unavailable at the expected Unix socket, and after enabling the account-scoped LiteSpeed Redis service, the same Node.js process returned `REDIS_PING_OK` over a Unix socket in 2 ms. This establishes local Redis transport reachability only; key operations, persistence, resource isolation under load, failover and production authorization remain unverified. Neither cPanel nor WHM API authorization was exercised. No production operational MCP tools are yet deployed.
 
-**Redis is optional for the alpha MCP milestone.** Do not enable caching for authentication decisions or security-sensitive tokens without a reviewed design. Do not claim Redis readiness until a successful live `PING` from Node.js. Redis or Valkey daemon status, persistence, security policy and production cache semantics require separate verification.
+**Redis is optional for the alpha MCP milestone.** Do not enable caching for authentication decisions or security-sensitive tokens without a reviewed design. The successful live Node.js `PING` confirms socket connectivity, but not complete production cache readiness. Redis or Valkey daemon status, persistence, security policy and production cache semantics require separate verification.
 
 ### MCP SDK version compatibility and diagnostic findings
 
@@ -49,7 +49,7 @@ The temporary cPanel probe uses Node.js v22, Passenger, a CommonJS `app.js` boot
 
 An upstream report about a missing `dist/index.mjs` in server v2.4.0 ([issue #3166](https://github.com/modelcontextprotocol/typescript-sdk/issues/3166)) was **closed after the reporter identified a stale npx cache**. Do not treat that report as evidence of a confirmed publisher regression. Pinning older versions alone did not resolve our hosting failure.
 
-Diagnostic probe v3.8 tests both the ESM `import()` and CommonJS `require()` export conditions, prefers a working ESM loader and falls back to CJS where available. Error diagnostics are redacted by category and include neither original error messages nor private filesystem paths. The full `initialize` / `tools/list` / `tools/call` sequence remains **unverified** until a successful real hosting test.
+Diagnostic probe v3.8 tests both the ESM `import()` and CommonJS `require()` export conditions, prefers a working ESM loader and falls back to CJS where available. Error diagnostics are redacted by category and include neither original error messages nor private filesystem paths. The full `initialize` / `tools/list` / `tools/call` sequence **passed** on probe v3.8 and again on v3.9 using CommonJS loading. ESM failure remains unresolved; future TypeScript build output must be validated against CommonJS runtime compatibility.
 
 The public hosting hostname for the current diagnostic target is `mcp-test2.arsamnet.com`; set `PROBE_PUBLIC_HOST` explicitly for Host/Origin validation. Temporary bearer tokens are not OAuth.
 
