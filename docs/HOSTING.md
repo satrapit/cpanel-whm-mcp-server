@@ -39,6 +39,8 @@ LiteSpeed documents per-account Unix sockets for CloudLinux and LiteSpeed Contai
 
 Probe v3.9 adds optional `POST /diagnostics/redis` under the temporary bearer and Host/Origin protections. It performs one read-only Redis/Valkey `PING` over a local Unix socket, defaulting to `/tmp/redis.sock`; set `REDIS_SOCKET_PATH` when needed. It uses only Node.js built-ins, never connects to arbitrary TCP hosts, and never writes, deletes or flushes cache keys. Socket-not-found or permission-denied does not imply Redis is absent on the server; the app's isolation context may differ.
 
+**Live probe outcome (2026-11-22, v3.9):** The Node.js 22.23.5 cPanel Passenger app passed MCP `initialize`, `tools/list`, `tools/call` (`MCP_SDK_END_TO_END_OK_V3_9`), MySQL authenticated `SELECT 1`, and upstream 2083/2087 TLS verification. Both MCP SDK packages loaded successfully via CommonJS; ESM imports failed. Redis `PING` returned `REDIS_SOCKET_NOT_FOUND` for the default `/tmp/redis.sock` path; no claim of Redis service absence or readiness is warranted. Next verify the per-user LiteSpeed Redis service is **enabled**, inspect the actual socket path and its visibility in the same Node.js application account, and retry with `REDIS_SOCKET_PATH` if a correct accessible path is confirmed. Do not loosen socket permissions or expose TCP Redis to the Internet.
+
 **Redis is optional for the alpha MCP milestone.** Do not enable caching for authentication decisions or security-sensitive tokens without a reviewed design. Do not claim Redis readiness until a successful live `PING` from Node.js. Redis or Valkey daemon status, persistence, security policy and production cache semantics require separate verification.
 
 ### MCP SDK version compatibility and diagnostic findings
