@@ -35,7 +35,7 @@ MCP structured text result
 
 In this initial milestone, persistence and credential vault are **not** implemented. The `DenyAllRepository` and vault stub are intentionally incapable of operating real connections. There is no development-authentication bypass. Although the provider client code exists, a production call path is deliberately disabled until an authenticated onboarding and encrypted secret store are reviewed and tested.
 
-No database tables or migrations were created, as no persistent domain state is in use. PostgreSQL/Prisma and envelope encryption are pending real requirements for the first usable connection service. Do not store provider API tokens in PostgreSQL plaintext, environment templates or logs. Owner isolation must be enforced in persistence as well as services.
+No database tables or migrations were created, as no persistent domain state is in use. MySQL/MariaDB/Prisma and durable encrypted credential storage remain pending. A dependency-free envelope encryption primitive now exists but is **not wired into the runtime**; it requires a separately managed KMS/HSM key wrapper and a tenant-scoped persistent credential repository before any real tokens can be stored. Never store raw provider tokens in the database, environment templates or logs. Owner isolation must be enforced in persistence as well as services.
 
 ## Threat model / residual risks
 
@@ -52,3 +52,9 @@ No database tables or migrations were created, as no persistent domain state is 
 ## Release boundary
 
 `v0.1.0-alpha.1` is not tagged. Full pnpm installation, TypeScript typecheck, lint, Vitest/MCP handshake, OAuth flow, upstream transport integration and dependency audit are currently unverified. See [README](../README.md) for actual state.
+
+## Hardening added after the initial draft
+
+- TLS upstream routing enforces a distinct allowlisted endpoint for each provider; token syntax/size validation runs before DNS. A hard wall-clock timeout and bounded streaming read protect against drip-feed responses.
+- `src/security/credential-envelope.ts` offers AES-256-GCM envelope encryption with a random per-record data key, external KMS wrapping, authenticated tenant/connection context and tamper detection. No master encryption key or production secrets are stored in this codebase. This is an **offline primitive only**, not a credential vault or live storage integration.
+- The runtime remains deny-all for connections and upstream secrets.

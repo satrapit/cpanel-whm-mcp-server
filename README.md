@@ -17,7 +17,7 @@ Secure, open-source MCP resource-server project for authorized cPanel UAPI and W
 
 ## Development setup
 
-Requirements: Node.js 24+, pnpm 10 and a trusted OIDC identity provider issuing access tokens for the exact MCP resource URL, with a signed `tenant_id` claim and `mcp:read` scope. The server is loopback-only in this milestone.
+Requirements: Node.js 22.16+ (current cPanel target is Node.js 22), pnpm 10 and a trusted OIDC identity provider issuing access tokens for the exact MCP resource URL, with a signed `tenant_id` claim and `mcp:read` scope. The server is loopback-only in this milestone.
 
 ```sh
 corepack enable
@@ -54,3 +54,9 @@ curl -fsS http://127.0.0.1:3000/health
 - We do not claim endorsement by WebPros/cPanel or OpenAI.
 
 Contributions and vulnerability reporting: [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md). The repository is currently unlicensed for redistribution until the owner selects and commits a license (Apache-2.0 is proposed).
+
+## Deployment target caveat
+
+The current TypeScript/ESM bootstrap is a development-only scaffold and is **not yet the verified CommonJS Passenger deployment artifact**. The cPanel runtime probe documented in `docs/HOSTING.md` confirms only a test-only MCP/Redis roundtrip, not this application. Before deployment, build and verify the Passenger-compatible CommonJS entry in the actual target environment.
+
+Core isolated security tests: `pnpm test:core` (requires locally installed TypeScript); complete MCP/OAuth integration and release verification are pending.

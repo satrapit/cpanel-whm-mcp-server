@@ -20,14 +20,16 @@ export async function readUpstreamJson(
   path: string,
   resolver?: Resolver,
 ): Promise<unknown> {
-  const allowedPaths = new Set([
-    '/execute/DomainInfo/list_domains',
-    '/json-api/listaccts?api.version=1&api.chunk.enable=1&api.chunk.size=20&api.chunk.start=1&api.columns.enable=1&api.columns.a=user&api.columns.b=domain',
-  ]);
-  if (!allowedPaths.has(path)) {
+  const allowedPaths: Readonly<Record<UpstreamConnection['kind'], string>> = {
+    cpanel: '/execute/DomainInfo/list_domains',
+    whm: '/json-api/listaccts?api.version=1&api.chunk.enable=1&api.chunk.size=20&api.chunk.start=1&api.columns.enable=1&api.columns.a=user&api.columns.b=domain',
+  };
+  if (allowedPaths[connection.kind] !== path) {
     throw new UpstreamError('UPSTREAM_REJECTED');
   }
-  if (!/^[a-z0-9_]{1,16}$/.test(connection.username) || /[\r\n]/.test(connection.token) || !connection.token) {
+  // Reject control bytes, whitespace and oversized secrets before allocating an HTTP request.
+  if (!/^[a-z0-9_]{1,16}$/.test(connection.username) || typeof connection.token !== 'string' ||
+      !/^[\x21-\x7e]{1,4096}$/.test(connection.token)) {
     throw new UpstreamError('UPSTREAM_REJECTED');
   }
   const address = await resolvePublicEndpoint(connection.hostname, resolver);
@@ -47,16 +49,22 @@ export async function readUpstreamJson(
         response.resume(); reject(new UpstreamError('UPSTREAM_REJECTED')); return;
       }
       let body = '';
+      let bodyBytes = 0;
       response.setEncoding('utf8');
       response.on('data', (chunk: string) => {
-        body += chunk;
-        if (Buffer.byteLength(body, 'utf8') > 256 * 1024) {
+        bodyBytes += Buffer.byteLength(chunk, 'utf8');
+        if (bodyBytes > 256 * 1024) {
           response.destroy(new UpstreamError('UPSTREAM_INVALID_RESPONSE'));
+          return;
         }
+        body += chunk;
       });
       response.on('end', () => resolve(body));
       response.on('error', reject);
     });
+    // Socket inactivity timeout alone does not stop a slow upstream sending endless partial data.
+    const deadline = setTimeout(() => request.destroy(new UpstreamError('UPSTREAM_UNAVAILABLE')), 10_000);
+    request.once('close', () => clearTimeout(deadline));
     request.on('timeout', () => request.destroy(new UpstreamError('UPSTREAM_UNAVAILABLE')));
     request.on('error', reject);
     request.end();

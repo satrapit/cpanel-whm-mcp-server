@@ -63,3 +63,75 @@ test('upstream rejects arbitrary URLs and paths before network access', async ()
     await assert.rejects(readUpstreamJson(connection, path, async () => ['8.8.8.8']));
   }
 });
+
+test('provider endpoints cannot be crossed and secrets are validated before any DNS lookup', async () => {
+  let lookups = 0;
+  const resolve = async () => { lookups += 1; return ['8.8.8.8']; };
+  const base = { kind: 'cpanel', hostname: 'example.com', username: 'demo', token: 'safe-token' };
+  const whmPath = '/json-api/listaccts?api.version=1&api.chunk.enable=1&api.chunk.size=20&api.chunk.start=1&api.columns.enable=1&api.columns.a=user&api.columns.b=domain';
+  for (const params of [
+    [{ ...base, kind: 'cpanel' }, whmPath],
+    [{ ...base, kind: 'whm' }, '/execute/DomainInfo/list_domains'],
+    [{ ...base, token: 'x\r\nInjected: yes' }, '/execute/DomainInfo/list_domains'],
+    [{ ...base, token: 'a'.repeat(4097) }, '/execute/DomainInfo/list_domains'],
+    [{ ...base, token: 'a\0b' }, '/execute/DomainInfo/list_domains'],
+  ]) {
+    await assert.rejects(readUpstreamJson(params[0], params[1], resolve));
+  }
+  assert.equal(lookups, 0);
+});
+
+test('credential envelope roundtrip binds ciphertext to exact tenant and connection and detects tampering', async () => {
+  const { createCipheriv, createDecipheriv, randomBytes } = await import('node:crypto');
+  const { encryptCredential, decryptCredential, CredentialProtectionError } = await import('../dist-core/security/credential-envelope.js');
+  const kek = randomBytes(32); // Synthetic test key; production requires external KMS.
+  let issuedDataKey;
+  const wrapper = {
+    async wrapKey(dataKey) {
+      issuedDataKey = dataKey;
+      const nonce = randomBytes(12);
+      const cipher = createCipheriv('aes-256-gcm', kek, nonce);
+      const encrypted = Buffer.concat([cipher.update(dataKey), cipher.final()]);
+      return { keyId: 'test-key-v1', wrappedKey: Buffer.concat([nonce, cipher.getAuthTag(), encrypted]) };
+    },
+    async unwrapKey(keyId, wrapped) {
+      if (keyId !== 'test-key-v1') throw new Error('KMS_UNAVAILABLE');
+      const decipher = createDecipheriv('aes-256-gcm', kek, wrapped.subarray(0, 12));
+      decipher.setAuthTag(wrapped.subarray(12, 28));
+      return Buffer.concat([decipher.update(wrapped.subarray(28)), decipher.final()]);
+    },
+  };
+  const scope = { tenantId: 'tenant_1', connectionId: 'conn_1' };
+  const encrypted = await encryptCredential('private_token_value', scope, wrapper);
+  assert.equal(encrypted.version, 1);
+  assert.equal(JSON.stringify(encrypted).includes('private_token_value'), false);
+  assert.equal(issuedDataKey.every(x => x === 0), true, 'plaintext DEK memory should be zeroized');
+  assert.equal(await decryptCredential(encrypted, scope, wrapper), 'private_token_value');
+  for (const otherScope of [{ ...scope, tenantId: 'tenant_2' }, { ...scope, connectionId: 'conn_2' }]) {
+    await assert.rejects(decryptCredential(encrypted, otherScope, wrapper), CredentialProtectionError);
+  }
+  for (const bad of [
+    { ...encrypted, version: 2 },
+    { ...encrypted, tag: Buffer.alloc(16).toString('base64') },
+    { ...encrypted, ciphertext: Buffer.from('fake').toString('base64') },
+    { ...encrypted, nonce: 'not base64!' },
+    { ...encrypted, keyId: 'test-key-v2' },
+    { ...encrypted, wrappedKey: Buffer.alloc(60).toString('base64') },
+  ]) {
+    await assert.rejects(decryptCredential(bad, scope, wrapper), CredentialProtectionError);
+  }
+  await assert.rejects(encryptCredential('x', { ...scope, tenantId: '../other' }, wrapper), CredentialProtectionError);
+  await assert.rejects(encryptCredential('x'.repeat(4097), scope, wrapper), CredentialProtectionError);
+  kek.fill(0);
+});
+
+test('credential encryption fails closed when wrapping service rejects or returns invalid metadata', async () => {
+  const { encryptCredential, CredentialProtectionError } = await import('../dist-core/security/credential-envelope.js');
+  const scope = { tenantId: 't1', connectionId: 'c1' };
+  await assert.rejects(encryptCredential('token', scope, {
+    async wrapKey() { throw new Error('internal KMS location or secret'); },
+  }), error => error instanceof CredentialProtectionError && error.message === 'CREDENTIAL_PROTECTION_FAILED');
+  await assert.rejects(encryptCredential('token', scope, {
+    async wrapKey() { return { keyId: 'invalid/path', wrappedKey: Buffer.alloc(40) }; },
+  }), CredentialProtectionError);
+});
