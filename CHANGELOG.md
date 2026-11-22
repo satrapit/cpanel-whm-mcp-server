@@ -8,7 +8,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 ### Added
 - Initial repository engineering instructions and product scope.
 - Initial development roadmap for a secure, read-only MCP foundation.
-- Documented verified cPanel/Passenger and MariaDB TLS hosting requirements; MCP SDK execution remains pending.
+- Documented verified cPanel/Passenger and MariaDB TLS hosting requirements.
+- Validated live test-only MCP SDK `initialize`, `tools/list`, and `tools/call` on Node.js 22 with CommonJS loader (probe v3.9).
+- Validated account-scoped LiteSpeed Redis Unix-socket `PING` from Node.js (probe v3.9); production cache semantics remain untested.
 
 ## Planned: [0.1.0-alpha.1]
 - Strict TypeScript project scaffolding and reproducible local development.
