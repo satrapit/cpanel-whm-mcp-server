@@ -76,3 +76,29 @@ pnpm start:passenger
 Configure cPanel Passenger's startup file as `app.cjs` **only after validating your Node.js Selector accepts that filename**, and keep the application root outside public_html. The build generates `dist-passenger/` with its own `{ "type": "commonjs" }` and uses Node 22; it is **not yet verified** on the actual cPanel target. Do not use the temporary diagnostic bearer mechanism as production OAuth. See [hosting evidence and limitations](docs/HOSTING.md).
 
 The public MCP endpoint now distinguishes `401 invalid_token` from `403 insufficient_scope`, checks the exact resource and expiry again at the HTTP boundary, and carries the signed end-user `sub` separately from OAuth `clientId`. Provider access remains disabled by the deny-all repository.
+
+### Per-process request limits and offline CommonJS verification
+
+The `/mcp` boundary now enforces bounded in-process global admission before
+token verification (64 concurrent requests; 2,000 requests per 60-second window).
+After signature verification and signed tenant/user validation, a second limiter
+allows 60 requests per minute and 4 concurrent requests per subject per tenant.
+Exceeded limits return HTTP 429 and `Retry-After`. **These are not distributed
+quotas**; production deployments must also apply reverse-proxy/edge throttling,
+particularly for invalid-token traffic.
+
+Connection lookup now accepts `tenantId` plus `connectionId`. Credential-vault
+calls include the authorized tenant/connection scope; a real vault and persistent
+tenant-scoped database are **not yet implemented**.
+
+Two offline checks are available with Node.js 22, TypeScript and Node types:
+
+```sh
+pnpm test:core
+pnpm test:passenger-core
+pnpm typecheck:core
+```
+
+`test:passenger-core` compiles only dependency-free core modules into real
+CommonJS JavaScript and loads them with `require()`. It does **not** validate
+the MCP SDK, Fastify, Jose, full Passenger app, or production OAuth integration.

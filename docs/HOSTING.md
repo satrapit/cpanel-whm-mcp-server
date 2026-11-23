@@ -75,3 +75,13 @@ Version `v0.1.0-alpha.1` is planned only. No production release or Git tag is wa
 ### Planned project build for Passenger (not a validated deployment)
 
 This repository now includes a `tsconfig.passenger.json` target that compiles TypeScript to CommonJS under `dist-passenger/`, a build script that adds a nested CommonJS `package.json`, and a minimal `app.cjs` bootstrap for Passenger. It does not rely on top-level await or `import.meta` in its executable entry. Keep the root `package.json` in ESM mode for local development. These steps must **not** be confused with the already confirmed diagnostic probe: `pnpm build:passenger`, runtime dependency loading, OAuth metadata, Host/Origin behavior behind the reverse proxy and authenticated tool execution all need testing on the selected cPanel Passenger installation before any deployment claim. The cPanel UI must be confirmed to accept `app.cjs` as a startup filename; otherwise provide a separate CommonJS package-root deployment artifact.
+
+### CommonJS core compile and request throttling verification
+
+`tsconfig.passenger-core.json` now emits dependency-free CommonJS modules.
+Node.js 22 successfully loaded that build using `require()` in an isolated
+offline test after correcting the `node:https` import. This is **not** a
+verified complete Passenger deployment: the full SDK/Fastify/Jose dependency
+installation, `pnpm build:passenger`, live authentication, and runtime MCP
+protocol flow remain untested. Before exposing the service, configure
+reverse-proxy rate limits in addition to the new per-process admission guards.

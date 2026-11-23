@@ -62,3 +62,18 @@ No database tables or migrations were created, as no persistent domain state is 
 ## Signed end-user vs OAuth client identity
 
 `AuthInfo.clientId` represents an OAuth client and must not be used as the user identity for tenant and connection grants. The OIDC verifier now requires a client identifier claim (`client_id` or `azp`); a separately verified `sub` and strongly typed `tenant_id` are attached by the HTTP layer to the MCP request context. A runtime policy independently checks exact audience, expiry and `mcp:read` and answers signed tokens with insufficient permission using HTTP 403. The initial deny-all connection repository is unchanged. These behaviors have dependency-light regression tests but still require an actual SDK/OIDC protocol integration test.
+
+## Request admission and credential repository boundary
+
+The MCP HTTP layer applies a bounded, fail-closed, per-process global limiter
+before JWT verification and a per-(tenant, signed subject) rate/concurrency
+limiter after verification. The counters retain SHA-256 identifiers instead of
+raw subject strings and release slots at response finish/close. They do **not**
+coordinate across Passenger workers; edge or shared throttling remains a
+deployment requirement.
+
+`ConnectionRepository.get(tenantId, connectionId)` requires a tenant-aware
+query. The vault port receives the credential reference and the exact authorized
+tenant/connection identifiers for independent validation before decrypting.
+The active production-facing implementation still denies every connection and
+has no durable vault or provider credential storage.
