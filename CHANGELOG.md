@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Local verification
+- Add a dependency-free, loopback-only visual diagnostic with live HTTP health/version checks and a bounded synthetic JSON-RPC walkthrough on `/preview/rpc`.
+- Reject all real `/mcp` requests in preview mode, disable provider credentials, and enforce local Host/Origin, CSP and payload limits.
+- Add seven HTTP integration/security regression tests and `npm run preview:local` for a first visible local milestone without package registry connectivity.
+
 ### Security
 - Add bounded per-process global pre-auth concurrency and per-tenant user rate/concurrency admissions; return HTTP 429 without exposing token identifiers. Distributed/edge controls remain pending.
 - Scope connection lookups and credential vault requests explicitly to the authorized tenant and connection, while keeping all real connections disabled.

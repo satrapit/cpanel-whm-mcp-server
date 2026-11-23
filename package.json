@@ -14,7 +14,7 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/main.js",
     "typecheck": "tsc --noEmit",
-    "test": "pnpm test:core && pnpm test:passenger-core",
+    "test": "pnpm test:core && pnpm test:passenger-core && pnpm test:preview",
     "lint": "eslint .",
     "format:check": "prettier --check .",
     "format": "prettier --write .",
@@ -23,7 +23,9 @@
     "typecheck:core": "tsc --noEmit -p tsconfig.core.json",
     "build:passenger": "tsc -p tsconfig.passenger.json && node scripts/mark-passenger-build.mjs",
     "start:passenger": "node app.cjs",
-    "test:passenger-core": "tsc -p tsconfig.passenger-core.json && node scripts/mark-passenger-core.mjs && node --test tests/passenger-core.test.cjs"
+    "test:passenger-core": "tsc -p tsconfig.passenger-core.json && node scripts/mark-passenger-core.mjs && node --test tests/passenger-core.test.cjs",
+    "preview:local": "node scripts/local-preview.mjs",
+    "test:preview": "node --test tests/local-preview.test.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/server": "2.4.0",

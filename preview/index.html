@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>cPanel &amp; WHM MCP Server · Local Diagnostic</title>
+  <link rel="stylesheet" href="/preview.css">
+  <script defer src="/preview.js"></script>
+</head>
+<body>
+  <div class="shell">
+    <header class="bar"><div class="brand"><span class="brand-icon">M</span><span>cPanel &amp; WHM <strong>MCP Server</strong></span></div><span class="status"><span class="dot"></span> LOCAL DIAGNOSTIC</span></header>
+    <main>
+      <div class="hero"><span class="eyebrow">DEVELOPER PREVIEW · 0.1.0 ALPHA</span><h1>Your local MCP gateway,<br><em>ready for its first checks.</em></h1><p>Verify the actual HTTP listener, inspect a synthetic JSON-RPC roundtrip, and observe security boundaries before connecting any hosting accounts.</p></div>
+      <div class="notice"><div class="notice-icon">!</div><p><strong>Diagnostic only — not an operational MCP server.</strong> This standalone localhost harness does not run the official MCP SDK, validate OAuth or connect to cPanel/WHM. The production <code>/mcp</code> endpoint is locked.</p></div>
+      <div class="grid">
+        <article class="panel"><div class="panel-top"><h2>Runtime status</h2><span class="tag">READ-ONLY</span></div><div class="metric" id="healthValue">Checking…</div><p class="muted" id="healthDetail">Calling GET /health</p><div class="rule"></div><div class="item"><span>Application version</span><strong id="versionValue">—</strong></div><div class="item"><span>Node.js version</span><strong id="nodeValue">—</strong></div><div class="item"><span>Upstream credentials</span><strong class="safe">Disabled</strong></div><button id="checkButton" class="secondary">↻ Recheck health</button></article>
+        <article class="panel"><div class="panel-top"><h2>HTTP / JSON-RPC walkthrough</h2><span class="tag">SYNTHETIC</span></div><p class="muted">Exercise a diagnostic-only JSON-RPC endpoint using real local HTTP requests. These methods do not use the MCP SDK.</p><div class="steps"><button id="initButton">1 · Initialize</button><button id="listButton">2 · List tools</button><button id="callButton">3 · Call preview_status</button></div><div class="rule"></div><p class="muted small">Last response <span id="rpcStatus">· Ready to test</span></p><pre id="rpcOutput" aria-live="polite">{ "message": "Choose a step above to begin" }</pre></article>
+      </div>
+      <section class="footer"><div><strong>Security gate</strong><p>Try the protected route to confirm it rejects unauthenticated requests.</p></div><button class="secondary" id="denyButton">Test GET /mcp → 401</button></section>
+      <div class="footnote">Bound to 127.0.0.1 · No external assets · No secrets · No real server operations</div>
+    </main>
+  </div>
+</body>
+</html>

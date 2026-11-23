@@ -45,6 +45,46 @@ curl -fsS http://127.0.0.1:3000/health
 
 `tools/list` requires a correctly issued bearer token with `aud` exactly equal to `PUBLIC_MCP_URL`; missing/invalid tokens return `401`. The tools are `capabilities_list`, `connections_list`, `cpanel_list_domains` and `whm_list_accounts`. Actual upstream tools return access denied until persistence and a secret vault are implemented.
 
+## First visible local test (zero external dependencies)
+
+The following local-only diagnostic gives you a real, interactive HTTP page before the
+full MCP SDK / OAuth environment is ready. **It is not the production MCP server**:
+its synthetic JSON-RPC roundtrip runs at `/preview/rpc`, and `/mcp` always rejects
+requests. No hosting credential, network egress, login or database is enabled.
+
+Requirements: Node.js 22 or 24. **No npm/pnpm installation is needed** for this preview.
+
+```sh
+# From the checked-out repository
+node --version
+npm run preview:local
+# Open in your browser: http://127.0.0.1:3100/
+```
+
+On macOS, open the URL in Safari/Chrome, or use `open http://127.0.0.1:3100/`.
+The dashboard lets you inspect HTTP health/version; press **Initialize**,
+**List tools**, **Call preview_status**, and **Test GET /mcp → 401**.
+Each action performs a real local HTTP request; the JSON-RPC responses are
+*synthetic diagnostics*, not evidence that the official MCP SDK is running.
+
+In a second terminal, run the automated end-to-end HTTP checks:
+
+```sh
+node --test tests/local-preview.test.mjs
+curl -i http://127.0.0.1:3100/health
+curl -i http://127.0.0.1:3100/mcp
+```
+
+Expected: `/health` responds `200`, `/mcp` responds `401` without OAuth, and
+seven local-preview regression tests pass. Use `Ctrl+C` to stop the server.
+The preview binds **only** to `127.0.0.1`, rejects unexpected Host/Origin,
+and refuses production mode. It deliberately does not read `.env` or contact
+real hosting servers.
+
+**Next gate:** install verified SDK dependencies with pnpm, generate and commit
+the lockfile, run full TypeScript/lint/build, then replace the synthetic
+walkthrough with actual SDK-backed MCP protocol and OIDC integration tests.
+
 ## Security and API compatibility
 
 - API docs: [cPanel UAPI](https://api.docs.cpanel.net/cpanel/introduction) and [WHM API 1](https://api.docs.cpanel.net/whm/introduction).
