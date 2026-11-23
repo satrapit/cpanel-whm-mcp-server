@@ -6,6 +6,7 @@ import { loadConfig } from './app/config.js';
 import { createAccessTokenVerifier } from './auth/oidc.js';
 import { createResourceAuthorization } from './auth/resource-policy.js';
 import { DenyAllRepository } from './connections/connection.js';
+import { RequestLimiter } from './security/request-limiter.js';
 import { createToolHandler } from './mcp/tools.js';
 
 /** A CommonJS-safe bootstrap for cPanel Passenger and a normal ESM entry for development. */
@@ -26,6 +27,13 @@ export async function startServer(): Promise<void> {
   };
   const handler = createToolHandler(dependencies);
   const nodeHandler = toNodeHandler(handler);
+  // Per-process overload safeguard; not a distributed quota system or edge WAF.
+  const limiter = new RequestLimiter();
+  // Bound concurrent authentication and MCP work before querying a remote JWKS endpoint.
+  // Per-process only: enforce network-edge limits in a multi-worker deployment.
+  const globalLimiter = new RequestLimiter({
+    windowMs: 60_000, maxRequests: 2_000, maxInflight: 64, maxPrincipals: 1,
+  });
   const publicHost = new URL(config.PUBLIC_MCP_URL).hostname;
   // The public hostname may be forwarded by a trusted reverse proxy on loopback.
   const allowedHosts = Array.from(new Set(['127.0.0.1', 'localhost', publicHost]));
@@ -41,6 +49,14 @@ export async function startServer(): Promise<void> {
   }));
 
   app.all('/mcp', async (request, reply) => {
+    const globalAdmission = globalLimiter.tryAcquire({ tenantId: '__system', sub: '__mcp' });
+    if (!globalAdmission.accepted) {
+      reply.header('Retry-After', String(globalAdmission.retryAfterSeconds ?? 1));
+      return reply.code(429).send({ error: 'rate_limited' });
+    }
+    const releaseGlobal = globalAdmission.release!;
+    reply.raw.once('finish', releaseGlobal);
+    reply.raw.once('close', releaseGlobal);
     // Multiple Authorization headers must not be normalized into an apparently valid single credential.
     if ((request.raw.headersDistinct.authorization?.length ?? 0) > 1) {
       reply.header('WWW-Authenticate', 'Bearer error="invalid_token", resource_metadata="' + auth.metadataUrl + '"');
@@ -52,6 +68,15 @@ export async function startServer(): Promise<void> {
       return reply.code(decision.status).send({ error: decision.code });
     }
     const identity = decision.identity;
+    const admission = limiter.tryAcquire(identity.principal);
+    if (!admission.accepted) {
+      reply.header('Retry-After', String(admission.retryAfterSeconds ?? 60));
+      return reply.code(429).send({ error: 'rate_limited' });
+    }
+    const release = admission.release!;
+    // Keep slots occupied until HTTP response finish/close (including streaming exchanges).
+    reply.raw.once('finish', release);
+    reply.raw.once('close', release);
     // AuthInfo.clientId means OAuth *client*, not user subject. Custom principal is server-verified.
     const authInfo = {
       token: request.headers.authorization!.slice(7),
@@ -61,7 +86,12 @@ export async function startServer(): Promise<void> {
       expiresAt: identity.expiresAt,
       resource: identity.resource,
     };
-    return nodeHandler(Object.assign(request.raw, { auth: authInfo }), reply.raw, request.body);
+    try {
+      return await nodeHandler(Object.assign(request.raw, { auth: authInfo }), reply.raw, request.body);
+    } catch {
+      release();
+      throw new Error('MCP_TRANSPORT_FAILED');
+    }
   });
 
   for (const signal of ['SIGINT', 'SIGTERM'] as const) {

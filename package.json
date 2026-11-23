@@ -14,15 +14,16 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/main.js",
     "typecheck": "tsc --noEmit",
-    "test": "pnpm test:core",
+    "test": "pnpm test:core && pnpm test:passenger-core",
     "lint": "eslint .",
     "format:check": "prettier --check .",
     "format": "prettier --write .",
     "audit": "pnpm audit --audit-level high",
-    "test:core": "node scripts/transpile-core.mjs && node --test tests/core.test.mjs tests/auth-policy.test.mjs tests/passenger-config.test.mjs tests/token-claims.test.mjs",
+    "test:core": "node scripts/transpile-core.mjs && node --test tests/core.test.mjs tests/auth-policy.test.mjs tests/passenger-config.test.mjs tests/token-claims.test.mjs tests/request-limiter.test.mjs tests/connection-scope.test.mjs",
     "typecheck:core": "tsc --noEmit -p tsconfig.core.json",
     "build:passenger": "tsc -p tsconfig.passenger.json && node scripts/mark-passenger-build.mjs",
-    "start:passenger": "node app.cjs"
+    "start:passenger": "node app.cjs",
+    "test:passenger-core": "tsc -p tsconfig.passenger-core.json && node scripts/mark-passenger-core.mjs && node --test tests/passenger-core.test.cjs"
   },
   "dependencies": {
     "@modelcontextprotocol/server": "2.4.0",

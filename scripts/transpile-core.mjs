@@ -3,7 +3,7 @@ import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import ts from 'typescript';
 const paths = [
-  'src/security/network.ts', 'src/security/upstream.ts', 'src/security/credential-envelope.ts', 'src/auth/resource-policy.ts', 'src/auth/token-claims.ts', 'src/connections/connection.ts',
+  'src/security/network.ts', 'src/security/upstream.ts', 'src/security/credential-envelope.ts', 'src/security/request-limiter.ts', 'src/auth/resource-policy.ts', 'src/auth/token-claims.ts', 'src/connections/connection.ts',
   'src/providers/cpanel.ts', 'src/providers/whm.ts', 'src/capabilities/registry.ts',
 ];
 for (const path of paths) {

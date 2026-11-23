@@ -47,7 +47,7 @@ export function createToolHandler(deps: Dependencies) {
       if (!principal) return deny();
       try {
         const connection = await authorizeConnection(deps.connections, principal, connectionId, 'cpanel', 'cpanel.domains.list');
-        const token = await deps.vault.getSecret(connection.credentialRef);
+        const token = await deps.vault.getSecret(connection.credentialRef, { tenantId: principal.tenantId, connectionId: connection.id });
         const result = await listCpanelDomains({ kind: 'cpanel', hostname: connection.hostname, username: connection.username, token });
         return { content: [{ type: 'text', text: JSON.stringify(result) }] };
       } catch (error) { return failure(error); }
@@ -61,7 +61,7 @@ export function createToolHandler(deps: Dependencies) {
       if (!principal) return deny();
       try {
         const connection = await authorizeConnection(deps.connections, principal, connectionId, 'whm', 'whm.accounts.list');
-        const token = await deps.vault.getSecret(connection.credentialRef);
+        const token = await deps.vault.getSecret(connection.credentialRef, { tenantId: principal.tenantId, connectionId: connection.id });
         const result = await listWhmAccounts({ kind: 'whm', hostname: connection.hostname, username: connection.username, token });
         return { content: [{ type: 'text', text: JSON.stringify(result) }] };
       } catch (error) { return failure(error); }

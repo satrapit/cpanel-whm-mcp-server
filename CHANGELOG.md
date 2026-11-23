@@ -6,6 +6,17 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 ### Security
+- Add bounded per-process global pre-auth concurrency and per-tenant user rate/concurrency admissions; return HTTP 429 without exposing token identifiers. Distributed/edge controls remain pending.
+- Scope connection lookups and credential vault requests explicitly to the authorized tenant and connection, while keeping all real connections disabled.
+- Add negative tests for denied subjects and tenant-aware storage queries.
+
+### Fixed
+- Correct a `node:https` import that blocked the isolated CommonJS TypeScript build.
+
+### Tests
+- Add an actual dependency-free CommonJS compilation and `require()` runtime smoke test, alongside isolated limiter and authorization tests.
+
+### Security
 - Add isolated resource-server authorization policy with exact audience and expiry re-checks, bounded bearer headers and distinct 401/403 OAuth challenges.
 - Validate signed tenant/user/client claims without string coercion; preserve the OAuth client identifier separately from the user subject.
 - Guard duplicate Authorization headers and configure bounded Host/Origin allowlists for the trusted public proxy hostname.

@@ -1,4 +1,4 @@
-import https from 'node:https';
+import * as https from 'node:https';
 import { resolvePublicEndpoint, type Resolver } from './network.js';
 
 export type UpstreamConnection = Readonly<{
