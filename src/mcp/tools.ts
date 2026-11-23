@@ -15,9 +15,10 @@ export interface Dependencies {
 export function createToolHandler(deps: Dependencies) {
   return createMcpHandler(({ authInfo }) => {
     const server = new McpServer({ name: 'cpanel-whm-mcp-server', version: deps.version }, { maxToolInputElements: 40 });
-    const identity = authInfo as (typeof authInfo & { tenantId?: string }) | undefined;
-    const principal: Principal | null = identity?.clientId && identity.tenantId && identity.scopes
-      ? { sub: identity.clientId, tenantId: identity.tenantId, scopes: identity.scopes }
+    const identity = authInfo as (typeof authInfo & { principal?: Principal }) | undefined;
+    // OAuth clientId is not the end-user. Accept only the signed subject carried by the HTTP auth gate.
+    const principal: Principal | null = identity?.principal && identity.scopes.includes('mcp:read')
+      ? identity.principal
       : null;
 
     server.registerTool('capabilities_list', {

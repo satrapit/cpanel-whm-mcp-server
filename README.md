@@ -17,7 +17,7 @@ Secure, open-source MCP resource-server project for authorized cPanel UAPI and W
 
 ## Development setup
 
-Requirements: Node.js 22.16+ (current cPanel target is Node.js 22), pnpm 10 and a trusted OIDC identity provider issuing access tokens for the exact MCP resource URL, with a signed `tenant_id` claim and `mcp:read` scope. The server is loopback-only in this milestone.
+Requirements: Node.js 22.16+ (current cPanel target is Node.js 22), pnpm 10 and a trusted OIDC identity provider issuing access tokens for the exact MCP resource URL, with a signed string `tenant_id` claim, a `client_id` (or `azp`) OAuth client identifier, and the `mcp:read` scope. The server is loopback-only in this milestone.
 
 ```sh
 corepack enable
@@ -60,3 +60,19 @@ Contributions and vulnerability reporting: [CONTRIBUTING.md](CONTRIBUTING.md), [
 The current TypeScript/ESM bootstrap is a development-only scaffold and is **not yet the verified CommonJS Passenger deployment artifact**. The cPanel runtime probe documented in `docs/HOSTING.md` confirms only a test-only MCP/Redis roundtrip, not this application. Before deployment, build and verify the Passenger-compatible CommonJS entry in the actual target environment.
 
 Core isolated security tests: `pnpm test:core` (requires locally installed TypeScript); complete MCP/OAuth integration and release verification are pending.
+
+## Offline security verification and Passenger build (not release-ready)
+
+`pnpm test:core` runs the dependency-light Node test suite for SSRF, authorization decisions, JWT claim validation, tenant isolation, credential-envelope tampering and Passenger packaging. `pnpm typecheck:core` checks only those isolated TypeScript modules. The full SDK/HTTP/OAuth flow has **not** been tested by these commands; it requires a networked, dependency-installed environment.
+
+The hosting target supports a **separate CommonJS build path**, because the live cPanel diagnostic could load the SDK through CommonJS while ESM loading remained unresolved:
+
+```sh
+pnpm install
+pnpm build:passenger
+pnpm start:passenger
+```
+
+Configure cPanel Passenger's startup file as `app.cjs` **only after validating your Node.js Selector accepts that filename**, and keep the application root outside public_html. The build generates `dist-passenger/` with its own `{ "type": "commonjs" }` and uses Node 22; it is **not yet verified** on the actual cPanel target. Do not use the temporary diagnostic bearer mechanism as production OAuth. See [hosting evidence and limitations](docs/HOSTING.md).
+
+The public MCP endpoint now distinguishes `401 invalid_token` from `403 insufficient_scope`, checks the exact resource and expiry again at the HTTP boundary, and carries the signed end-user `sub` separately from OAuth `clientId`. Provider access remains disabled by the deny-all repository.

@@ -71,3 +71,7 @@ If reusing a WHM-hosted certificate for MariaDB, WHM certificate renewal alone d
 ## Initial release policy
 
 Version `v0.1.0-alpha.1` is planned only. No production release or Git tag is warranted until the real SDK integration, full authentication and security checks have been executed successfully.
+
+### Planned project build for Passenger (not a validated deployment)
+
+This repository now includes a `tsconfig.passenger.json` target that compiles TypeScript to CommonJS under `dist-passenger/`, a build script that adds a nested CommonJS `package.json`, and a minimal `app.cjs` bootstrap for Passenger. It does not rely on top-level await or `import.meta` in its executable entry. Keep the root `package.json` in ESM mode for local development. These steps must **not** be confused with the already confirmed diagnostic probe: `pnpm build:passenger`, runtime dependency loading, OAuth metadata, Host/Origin behavior behind the reverse proxy and authenticated tool execution all need testing on the selected cPanel Passenger installation before any deployment claim. The cPanel UI must be confirmed to accept `app.cjs` as a startup filename; otherwise provide a separate CommonJS package-root deployment artifact.

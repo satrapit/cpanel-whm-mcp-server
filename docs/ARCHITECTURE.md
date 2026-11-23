@@ -58,3 +58,7 @@ No database tables or migrations were created, as no persistent domain state is 
 - TLS upstream routing enforces a distinct allowlisted endpoint for each provider; token syntax/size validation runs before DNS. A hard wall-clock timeout and bounded streaming read protect against drip-feed responses.
 - `src/security/credential-envelope.ts` offers AES-256-GCM envelope encryption with a random per-record data key, external KMS wrapping, authenticated tenant/connection context and tamper detection. No master encryption key or production secrets are stored in this codebase. This is an **offline primitive only**, not a credential vault or live storage integration.
 - The runtime remains deny-all for connections and upstream secrets.
+
+## Signed end-user vs OAuth client identity
+
+`AuthInfo.clientId` represents an OAuth client and must not be used as the user identity for tenant and connection grants. The OIDC verifier now requires a client identifier claim (`client_id` or `azp`); a separately verified `sub` and strongly typed `tenant_id` are attached by the HTTP layer to the MCP request context. A runtime policy independently checks exact audience, expiry and `mcp:read` and answers signed tokens with insufficient permission using HTTP 403. The initial deny-all connection repository is unchanged. These behaviors have dependency-light regression tests but still require an actual SDK/OIDC protocol integration test.

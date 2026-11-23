@@ -6,11 +6,16 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 ### Security
+- Add isolated resource-server authorization policy with exact audience and expiry re-checks, bounded bearer headers and distinct 401/403 OAuth challenges.
+- Validate signed tenant/user/client claims without string coercion; preserve the OAuth client identifier separately from the user subject.
+- Guard duplicate Authorization headers and configure bounded Host/Origin allowlists for the trusted public proxy hostname.
 - Bind allowlisted upstream endpoints to each provider type, reject oversized or malformed credentials before egress, and enforce a hard upstream deadline.
 - Add an offline AES-256-GCM envelope encryption primitive with external key-wrapping interface and authenticated tenant/connection binding; no production credential repository is enabled.
 - Extend the offline core test suite with cross-provider, tampering, cross-tenant, and unavailable key-wrapper regressions.
 
 ### Added
+- Add an unverified isolated CommonJS Passenger build target and minimal `app.cjs` bootstrap; test-only packaging contracts are covered offline.
+- Add dependency-light JWT claims, bearer policy and Passenger packaging regression tests.
 - Initial working TypeScript project scaffold and read-only provider adapter examples (not yet fully verified or deployable).
 - Initial repository engineering instructions and product scope.
 - Initial development roadmap for a secure, read-only MCP foundation.

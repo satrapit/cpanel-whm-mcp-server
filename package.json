@@ -19,8 +19,10 @@
     "format:check": "prettier --check .",
     "format": "prettier --write .",
     "audit": "pnpm audit --audit-level high",
-    "test:core": "node scripts/transpile-core.mjs && node --test tests/core.test.mjs",
-    "typecheck:core": "tsc --noEmit -p tsconfig.core.json"
+    "test:core": "node scripts/transpile-core.mjs && node --test tests/core.test.mjs tests/auth-policy.test.mjs tests/passenger-config.test.mjs tests/token-claims.test.mjs",
+    "typecheck:core": "tsc --noEmit -p tsconfig.core.json",
+    "build:passenger": "tsc -p tsconfig.passenger.json && node scripts/mark-passenger-build.mjs",
+    "start:passenger": "node app.cjs"
   },
   "dependencies": {
     "@modelcontextprotocol/server": "2.4.0",
