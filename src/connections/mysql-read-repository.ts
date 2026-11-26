@@ -1,4 +1,5 @@
 import { assertHostname } from '../security/network.js';
+import { CONNECTION_READ_SQL } from './connection-queries.js';
 import type { Connection, ConnectionRepository, Principal } from './connection.js';
 
 /** A read-only, parameterized query port. Production adapters MUST bind values, never interpolate them. */
@@ -34,8 +35,7 @@ export class MySqlReadConnectionRepository implements ConnectionRepository {
   async isMember(principal: Principal, tenantId: string): Promise<boolean> {
     if (!safePrincipal(principal) || principal.tenantId !== tenantId) return false;
     const rows = await this.db.select(
-      `SELECT 1 AS allowed FROM mcp_tenant_memberships
-       WHERE tenant_id = ? AND subject = ? AND active = 1 LIMIT 1`,
+      CONNECTION_READ_SQL.MEMBER,
       [tenantId, principal.sub],
     );
     return rows.length === 1 && isEnabled(rows[0]?.allowed);
@@ -44,13 +44,7 @@ export class MySqlReadConnectionRepository implements ConnectionRepository {
   async canAccess(principal: Principal, connectionId: string): Promise<boolean> {
     if (!safePrincipal(principal) || !UUID.test(connectionId)) return false;
     const rows = await this.db.select(
-      `SELECT 1 AS allowed FROM mcp_connection_grants AS g
-       INNER JOIN mcp_tenant_memberships AS m
-         ON m.tenant_id = g.tenant_id AND m.subject = g.subject AND m.active = 1
-       INNER JOIN mcp_connections AS c
-         ON c.tenant_id = g.tenant_id AND c.id = g.connection_id AND c.enabled = 1
-       WHERE g.tenant_id = ? AND g.subject = ? AND g.connection_id = ?
-         AND g.active = 1 LIMIT 1`,
+      CONNECTION_READ_SQL.GRANT,
       [principal.tenantId, principal.sub, connectionId],
     );
     return rows.length === 1 && isEnabled(rows[0]?.allowed);
@@ -59,8 +53,7 @@ export class MySqlReadConnectionRepository implements ConnectionRepository {
   async get(tenantId: string, id: string): Promise<Connection | null> {
     if (!safeId(tenantId, 128) || !UUID.test(id)) return null;
     const rows = await this.db.select(
-      `SELECT id, tenant_id, kind, hostname, username, credential_ref, enabled
-       FROM mcp_connections WHERE tenant_id = ? AND id = ? LIMIT 1`,
+      CONNECTION_READ_SQL.GET,
       [tenantId, id],
     );
     if (rows.length !== 1) return null;
@@ -72,8 +65,7 @@ export class MySqlReadConnectionRepository implements ConnectionRepository {
     let hostname: string;
     try { hostname = assertHostname(row.hostname); } catch { return null; }
     const caps = await this.db.select(
-      `SELECT capability FROM mcp_connection_capabilities
-       WHERE tenant_id = ? AND connection_id = ? AND verified = 1 LIMIT 3`,
+      CONNECTION_READ_SQL.CAPABILITIES,
       [tenantId, id],
     );
     if (caps.length > KNOWN_CAPABILITIES.length ||
@@ -92,11 +84,7 @@ export class MySqlReadConnectionRepository implements ConnectionRepository {
   async list(principal: Principal): Promise<readonly Connection[]> {
     if (!safePrincipal(principal) || !await this.isMember(principal, principal.tenantId)) return [];
     const rows = await this.db.select(
-      `SELECT c.id FROM mcp_connections AS c
-       INNER JOIN mcp_connection_grants AS g
-         ON g.tenant_id = c.tenant_id AND g.connection_id = c.id AND g.active = 1
-       WHERE c.tenant_id = ? AND g.subject = ? AND c.enabled = 1
-       ORDER BY c.id LIMIT 50`,
+      CONNECTION_READ_SQL.LIST,
       [principal.tenantId, principal.sub],
     );
     const result: Connection[] = [];
