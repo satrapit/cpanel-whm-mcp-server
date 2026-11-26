@@ -77,3 +77,9 @@ query. The vault port receives the credential reference and the exact authorized
 tenant/connection identifiers for independent validation before decrypting.
 The active production-facing implementation still denies every connection and
 has no durable vault or provider credential storage.
+
+## Prepared MariaDB tenant read-model (not runtime-enabled)
+
+The draft SQL migration at `sql/001_connections_read_model.sql` defines a dedicated application read-model for tenants, externally signed subject memberships, connections, verified capabilities and grants. Foreign keys use composite `(tenant_id, connection_id)` identifiers so a grant cannot reference another tenant's connection. All access-control flags default to false. No plaintext token or vault key column exists; `credential_ref` is opaque.
+
+`MySqlReadConnectionRepository` provides a parameterized read-only port, scoped to the authenticated tenant and subject. Membership and explicit per-connection grants must both pass; unknown provider capabilities and malformed rows fail closed. It is tested using fake SQL query results, not a real database. The application still wires `DenyAllRepository` until a vetted MySQL driver, migrations, independently scoped encrypted vault, operational onboarding and database integration tests exist. Applying the schema does not turn on upstream access.
