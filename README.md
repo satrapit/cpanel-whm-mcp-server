@@ -1,31 +1,172 @@
 # cPanel & WHM MCP Server
 
-Secure, open-source MCP server for managing cPanel hosting accounts and WHM servers through ChatGPT and AI assistants. Supports end users, resellers, and administrators.
+Secure, open-source MCP resource-server project for authorized cPanel UAPI and WHM API 1 access by ChatGPT and other MCP clients. End-user, reseller and administrator connection models are planned; permissions are verified per connection, not inferred from caller labels.
 
-**Repository:** https://github.com/satrapit/cpanel-whm-mcp-server
+**Status: development foundation; not a released or production-ready server.** The working tree declares `0.1.0-alpha.1` as its *planned* prerelease version. **No release tag has been created.** The current integration exposes read-only tool descriptors but has no credential vault or persistent tenant repository; real upstream calls deliberately fail closed. The vendor adapters are only contract-tested against synthetic data.
 
-## Project status
-The repository is in initial architecture/bootstrap stage. **No production-ready API tools are available yet.** The first planned milestone is `v0.1.0-alpha.1`; it will be tagged only after implementation and tests pass.
+## Implemented foundations
 
-## Scope
-- cPanel account-level functionality using documented UAPI.
-- WHM reseller- and administrator-level functionality using documented WHM API 1.
-- Multiple authorized connections, server-side access enforcement, typed MCP tools, capability discovery, safe change approval and auditable operations.
-- Incremental expansion toward documented API coverage, with each capability's availability and limitations recorded.
+- Official MCP TypeScript SDK v2-based stateless Streamable HTTP integration design with typed, read-only tool registrations.
+- Validated OIDC JWT signatures/issuer/audience/expiry/scopes via `jose`, using externally provisioned JWKS. No custom OAuth authorization server.
+- Protected-resource metadata, health and version endpoints, and deny-by-default connection repository.
+- Narrow cPanel `DomainInfo/list_domains` and WHM API 1 `listaccts` provider adapters.
+- HTTPS-only management ports (`2083`, `2087`), fixed operation paths, verified TLS, pinned DNS resolution and public-IPv4-only outbound policy.
+- Bounded and allowlisted provider output; no upstream response passthrough or unreviewed write API tools.
 
-## Security model
-- OAuth/OIDC for user identity; cPanel/WHM API tokens are stored only on the service side.
-- Strict tenant and server authorization, deny by default and no shell or arbitrary raw API execution.
-- Read-only-first implementation; dangerous operations require explicit server-validated approval.
-- No real server credentials, secrets or test accounts belong in this repository.
+**Not implemented:** encrypted credential storage, applied database migrations, onboarding, dynamic server capability discovery, verified reseller ACLs, public remote deployment, write/approval flows, rate limiting, concurrency control, testable real-server access and automated CI. See [API coverage](docs/API_COVERAGE.md) and [architecture](docs/ARCHITECTURE.md).
 
-See [AGENTS.md](AGENTS.md) for engineering rules and source references.
+## Development setup
 
-## Getting started
-See [Hosting and deployment](docs/HOSTING.md) for the confirmed cPanel/Passenger and MySQL/MariaDB environment and the verification gates. Application scaffolding is still pending.
+Requirements: Node.js 22.16+ (current cPanel target is Node.js 22), pnpm 10 and a trusted OIDC identity provider issuing access tokens for the exact MCP resource URL, with a signed string `tenant_id` claim, a `client_id` (or `azp`) OAuth client identifier, and the `mcp:read` scope. The server is loopback-only in this milestone.
 
-## Versioning
-Semantic Versioning and [CHANGELOG.md](CHANGELOG.md) are used from the first development version. The roadmap starts with `v0.1.0-alpha.1` and progresses to broader functionality only after security and test gates are satisfied.
+```sh
+corepack enable
+pnpm install
+cp .env.example .env
+# Configure OIDC_ISSUER and OIDC_JWKS_URL and load environment variables in your shell.
+set -a; . ./.env; set +a
+pnpm typecheck
+pnpm test
+pnpm lint
+pnpm format:check
+pnpm build
+pnpm start
+```
 
-## License
-A public license must be selected and added before distributing a release. Apache-2.0 is the current proposal; do not assume a license is granted until a LICENSE file is committed.
+The committed dependency lockfile is **pending generation and verification in a network-enabled environment**. Until it is committed, `pnpm install` is not fully reproducible. Do not tag or distribute a release using this bootstrap alone. Package versions are pinned as a provisional baseline.
+
+Available routes (on `http://127.0.0.1:3000` by default): `GET /health`, `GET /version`, `GET /.well-known/oauth-protected-resource/mcp`, and authenticated `POST /mcp`. The metadata points OAuth clients at an external issuer; the MCP server never issues access tokens itself.
+
+To inspect the public health endpoint:
+
+```sh
+curl -fsS http://127.0.0.1:3000/health
+```
+
+`tools/list` requires a correctly issued bearer token with `aud` exactly equal to `PUBLIC_MCP_URL`; missing/invalid tokens return `401`. The tools are `capabilities_list`, `connections_list`, `cpanel_list_domains` and `whm_list_accounts`. Actual upstream tools return access denied until persistence and a secret vault are implemented.
+
+## First visible local test (zero external dependencies)
+
+The following local-only diagnostic gives you a real, interactive HTTP page before the
+full MCP SDK / OAuth environment is ready. **It is not the production MCP server**:
+its synthetic JSON-RPC roundtrip runs at `/preview/rpc`, and `/mcp` always rejects
+requests. No hosting credential, network egress, login or database is enabled.
+
+Requirements: Node.js 22 or 24. **No npm/pnpm installation is needed** for this preview.
+
+```sh
+# From the checked-out repository
+node --version
+npm run preview:local
+# Open in your browser: http://127.0.0.1:3100/
+```
+
+On macOS, open the URL in Safari/Chrome, or use `open http://127.0.0.1:3100/`.
+The dashboard lets you inspect HTTP health/version; press **Initialize**,
+**List tools**, **Call preview_status**, and **Test GET /mcp → 401**.
+Each action performs a real local HTTP request; the JSON-RPC responses are
+*synthetic diagnostics*, not evidence that the official MCP SDK is running.
+
+In a second terminal, run the automated end-to-end HTTP checks:
+
+```sh
+node --test tests/local-preview.test.mjs
+curl -i http://127.0.0.1:3100/health
+curl -i http://127.0.0.1:3100/mcp
+```
+
+Expected: `/health` responds `200`, `/mcp` responds `401` without OAuth, and
+seven local-preview regression tests pass. Use `Ctrl+C` to stop the server.
+The preview binds **only** to `127.0.0.1`, rejects unexpected Host/Origin,
+and refuses production mode. It deliberately does not read `.env` or contact
+real hosting servers.
+
+**Next gate:** install verified SDK dependencies with pnpm, generate and commit
+the lockfile, run full TypeScript/lint/build, then replace the synthetic
+walkthrough with actual SDK-backed MCP protocol and OIDC integration tests.
+
+## Security and API compatibility
+
+- API docs: [cPanel UAPI](https://api.docs.cpanel.net/cpanel/introduction) and [WHM API 1](https://api.docs.cpanel.net/whm/introduction).
+- MCP SDK: [official TypeScript server SDK](https://github.com/modelcontextprotocol/typescript-sdk).
+- Secret values stay outside MCP outputs, logs and Git. The server accepts no arbitrary upstream URL/function/parameter or shell commands.
+- No guarantee of real-server compatibility exists without an authorized, separately enabled integration suite.
+- We do not claim endorsement by WebPros/cPanel or OpenAI.
+
+Contributions and vulnerability reporting: [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md). The repository is currently unlicensed for redistribution until the owner selects and commits a license (Apache-2.0 is proposed).
+
+## Deployment target caveat
+
+The current TypeScript/ESM bootstrap is a development-only scaffold and is **not yet the verified CommonJS Passenger deployment artifact**. The cPanel runtime probe documented in `docs/HOSTING.md` confirms only a test-only MCP/Redis roundtrip, not this application. Before deployment, build and verify the Passenger-compatible CommonJS entry in the actual target environment.
+
+Core isolated security tests: `pnpm test:core` (requires locally installed TypeScript); complete MCP/OAuth integration and release verification are pending.
+
+## Offline security verification and Passenger build (not release-ready)
+
+`pnpm test:core` runs the dependency-light Node test suite for SSRF, authorization decisions, JWT claim validation, tenant isolation, credential-envelope tampering and Passenger packaging. `pnpm typecheck:core` checks only those isolated TypeScript modules. The full SDK/HTTP/OAuth flow has **not** been tested by these commands; it requires a networked, dependency-installed environment.
+
+The hosting target supports a **separate CommonJS build path**, because the live cPanel diagnostic could load the SDK through CommonJS while ESM loading remained unresolved:
+
+```sh
+pnpm install
+pnpm build:passenger
+pnpm start:passenger
+```
+
+Configure cPanel Passenger's startup file as `app.cjs` **only after validating your Node.js Selector accepts that filename**, and keep the application root outside public_html. The build generates `dist-passenger/` with its own `{ "type": "commonjs" }` and uses Node 22; it is **not yet verified** on the actual cPanel target. Do not use the temporary diagnostic bearer mechanism as production OAuth. See [hosting evidence and limitations](docs/HOSTING.md).
+
+The public MCP endpoint now distinguishes `401 invalid_token` from `403 insufficient_scope`, checks the exact resource and expiry again at the HTTP boundary, and carries the signed end-user `sub` separately from OAuth `clientId`. Provider access remains disabled by the deny-all repository.
+
+### Per-process request limits and offline CommonJS verification
+
+The `/mcp` boundary now enforces bounded in-process global admission before
+token verification (64 concurrent requests; 2,000 requests per 60-second window).
+After signature verification and signed tenant/user validation, a second limiter
+allows 60 requests per minute and 4 concurrent requests per subject per tenant.
+Exceeded limits return HTTP 429 and `Retry-After`. **These are not distributed
+quotas**; production deployments must also apply reverse-proxy/edge throttling,
+particularly for invalid-token traffic.
+
+Connection lookup now accepts `tenantId` plus `connectionId`. Credential-vault
+calls include the authorized tenant/connection scope; a real vault and persistent
+tenant-scoped database are **not yet implemented**.
+
+Two offline checks are available with Node.js 22, TypeScript and Node types:
+
+```sh
+pnpm test:core
+pnpm test:passenger-core
+pnpm typecheck:core
+```
+
+`test:passenger-core` compiles only dependency-free core modules into real
+CommonJS JavaScript and loads them with `require()`. It does **not** validate
+the MCP SDK, Fastify, Jose, full Passenger app, or production OAuth integration.
+
+## Tenant-scoped MariaDB read-model (unapplied, offline-tested)
+
+The development branch now includes `sql/001_connections_read_model.sql` and `src/connections/mysql-read-repository.ts`. The schema models tenants, signed-subject memberships, connection metadata (opaque credential references only), verified read capabilities, and explicit per-connection grants. All memberships, grants, capabilities, and connections default to disabled or unverified; only parameterized, tenant-constrained SELECT queries are defined. No tokens or encrypted credentials are stored in these tables.
+
+The repository intentionally remains **disconnected from the HTTP/MCP runtime**. A production SQL driver adapter, controlled migrations against the dedicated MariaDB schema, audited onboarding, independent encrypted KMS-backed vault, rotation/revocation, and real integration tests are still required before removing `DenyAllRepository`. Running the SQL file or populating grants does **not** enable remote provider operations.
+
+Offline checks: `pnpm test:core` includes `tests/mysql-read-repository.test.mjs`, which uses a fake query executor to verify scope, SQL bindings, invalid inputs, grant revocation, capability isolation, and bounded listings. This is *not* a real MariaDB integration test. No production migration was executed.
+
+## Offline-prepared MariaDB SQL + encrypted credential vault (not deployed)
+
+The security foundation includes exact SQL allowlists (`connection-queries.ts` and `credential-lookup-query.ts`) and a `MySql2PreparedReadSql` bridge that accepts a **mysql2/promise-compatible `execute(sql, values)` pool**. The bridge rejects unreviewed statements, mismatched positional parameters, malformed row sets and database error disclosure. The current project **does not install, instantiate or connect a mysql2 pool**; verified driver installation, a least-privilege read-only database account, connection/TLS timeout configuration and live MariaDB tests are pending.
+
+`MySqlEncryptedCredentialVault` performs a strictly tenant/connection/reference-bound SELECT, verifies returned record ownership, and decrypts an AES-256-GCM envelope via the independently supplied `DataKeyWrapper`. Its key wrapper in offline tests is **synthetic only**. Actual key wrapping requires an external KMS/HSM. Never put the KEK in `.env`, database tables, PHP files or Git.
+
+Migration `sql/002_credential_envelopes.sql` depends on the **unapplied** `sql/001_connections_read_model.sql`; both are proposals and have **not been executed** on any server. Their encrypted-envelope records default to `active=0`. There is intentionally no public provisioning or write API, no configured vault, and no change to runtime `DenyAllRepository`.
+
+Offline test commands: `pnpm test:core` includes the MariaDB query adapter, encrypted vault and synthetic connection-to-vault integration suites. In the standalone cloud TypeScript harness, 15 targeted tests, strict typecheck and actual Node 22 CommonJS module loading passed. These are not a real MCP SDK, KMS or database acceptance test.
+
+## Strict TLS MariaDB connection pool (development only)
+
+A new opt-in entry at `src/runtime/mysql2-driver.ts` uses the pinned `mysql2/promise` driver (version `3.24.6`) and delegates to the tested `openMariaDbReadBoundary` bootstrap. This is **not called by `src/main.ts`**: all provider operations still fail closed through `DenyAllRepository`.
+
+The dependency-light pool policy rejects IP literals, untrusted hostnames, arbitrary ports and connection strings, invalid credentials/identifiers, and CA data masquerading as paths. Remote connections use port 3306, verified server certificates **and hostname verification**, minimum TLS 1.2, a four-connection pool, a bounded wait queue and a five-second connection timeout. It neither exposes a Unix socket escape hatch nor permits `rejectUnauthorized=false`.
+
+Before returning any repository or vault, the bootstrap obtains a real connection, queries `SHOW SESSION STATUS LIKE 'Ssl_cipher'` and denies connections with no negotiated TLS cipher. On TLS failure, it releases the session and closes the pool; errors are normalized without leaking credentials. The actual hosting deployment should use `host.websitex.net` only after real TLS hostname and CA-chain validation with a dedicated **SELECT-only** MariaDB user. No live credentials are defined in this repository.
+
+`pnpm test:core` now includes five additional cloud-tested mock-driver TLS/bootstrap regressions. Together with earlier tests, 20 targeted storage/security tests passed in an isolated Node 22 + TypeScript 5.8 environment, including a CommonJS load check. **Not yet verified:** the real mysql2 package installation, full repo TypeScript build, lockfile/security audit, live MariaDB connection, external KMS and end-to-end MCP/OIDC. Do not deploy or merge for release until these gates pass.

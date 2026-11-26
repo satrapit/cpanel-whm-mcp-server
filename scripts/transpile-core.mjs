@@ -1,0 +1,15 @@
+// Development-only offline smoke adapter. Not a substitute for strict TypeScript compilation.
+import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { join, dirname } from 'node:path';
+import ts from 'typescript';
+const paths = [
+  'src/security/network.ts', 'src/security/upstream.ts', 'src/security/credential-envelope.ts', 'src/security/request-limiter.ts', 'src/auth/resource-policy.ts', 'src/auth/token-claims.ts', 'src/connections/connection.ts', 'src/connections/connection-queries.ts', 'src/connections/credential-lookup-query.ts', 'src/connections/mysql-read-repository.ts', 'src/connections/mysql2-read-sql.ts', 'src/connections/mysql-encrypted-vault.ts', 'src/connections/mysql-pool-policy.ts', 'src/connections/mysql-pool-bootstrap.ts',
+  'src/providers/cpanel.ts', 'src/providers/whm.ts', 'src/capabilities/registry.ts',
+];
+for (const path of paths) {
+  const output = join('dist-core', path.replace(/^src\//, '').replace(/\.ts$/, '.js'));
+  mkdirSync(dirname(output), { recursive: true });
+  writeFileSync(output, ts.transpileModule(readFileSync(path, 'utf8'), {
+    fileName: path, compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ES2022 }
+  }).outputText);
+}

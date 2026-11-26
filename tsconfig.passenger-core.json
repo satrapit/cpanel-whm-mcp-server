@@ -1,0 +1,14 @@
+{
+  "extends": "./tsconfig.passenger.json",
+  "compilerOptions": {
+    "outDir": "dist-passenger-core"
+  },
+  "include": [
+    "src/security/**/*.ts",
+    "src/auth/resource-policy.ts",
+    "src/auth/token-claims.ts",
+    "src/connections/**/*.ts",
+    "src/providers/**/*.ts",
+    "src/capabilities/**/*.ts"
+  ]
+}
