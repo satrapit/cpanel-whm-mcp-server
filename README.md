@@ -13,7 +13,7 @@ Secure, open-source MCP resource-server project for authorized cPanel UAPI and W
 - HTTPS-only management ports (`2083`, `2087`), fixed operation paths, verified TLS, pinned DNS resolution and public-IPv4-only outbound policy.
 - Bounded and allowlisted provider output; no upstream response passthrough or unreviewed write API tools.
 
-**Not implemented:** encrypted credential storage, database migrations, onboarding, dynamic server capability discovery, verified reseller ACLs, public remote deployment, write/approval flows, rate limiting, concurrency control, testable real-server access and automated CI. See [API coverage](docs/API_COVERAGE.md) and [architecture](docs/ARCHITECTURE.md).
+**Not implemented:** encrypted credential storage, applied database migrations, onboarding, dynamic server capability discovery, verified reseller ACLs, public remote deployment, write/approval flows, rate limiting, concurrency control, testable real-server access and automated CI. See [API coverage](docs/API_COVERAGE.md) and [architecture](docs/ARCHITECTURE.md).
 
 ## Development setup
 
