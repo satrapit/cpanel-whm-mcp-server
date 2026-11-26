@@ -12,6 +12,10 @@ test('passenger core output is loadable using Node CommonJS require()', () => {
   assert.equal(typeof network.resolvePublicEndpoint, 'function');
   assert.equal(typeof upstream.readUpstreamJson, 'function');
   assert.equal(typeof connections.authorizeConnection, 'function');
+  const preparedSql = require('../dist-passenger-core/connections/mysql2-read-sql.js');
+  const credentialVault = require('../dist-passenger-core/connections/mysql-encrypted-vault.js');
+  assert.equal(typeof preparedSql.MySql2PreparedReadSql, 'function');
+  assert.equal(typeof credentialVault.MySqlEncryptedCredentialVault, 'function');
   const mysqlRepo = require('../dist-passenger-core/connections/mysql-read-repository.js');
   assert.equal(typeof mysqlRepo.MySqlReadConnectionRepository, 'function');
   assert.equal(typeof envelope.encryptCredential, 'function');
