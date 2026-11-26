@@ -15,6 +15,10 @@ test('passenger core output is loadable using Node CommonJS require()', () => {
   const preparedSql = require('../dist-passenger-core/connections/mysql2-read-sql.js');
   const credentialVault = require('../dist-passenger-core/connections/mysql-encrypted-vault.js');
   assert.equal(typeof preparedSql.MySql2PreparedReadSql, 'function');
+  const poolPolicy = require('../dist-passenger-core/connections/mysql-pool-policy.js');
+  const poolBootstrap = require('../dist-passenger-core/connections/mysql-pool-bootstrap.js');
+  assert.equal(typeof poolPolicy.buildMariaDbReadPoolOptions, 'function');
+  assert.equal(typeof poolBootstrap.openMariaDbReadBoundary, 'function');
   assert.equal(typeof credentialVault.MySqlEncryptedCredentialVault, 'function');
   const mysqlRepo = require('../dist-passenger-core/connections/mysql-read-repository.js');
   assert.equal(typeof mysqlRepo.MySqlReadConnectionRepository, 'function');
