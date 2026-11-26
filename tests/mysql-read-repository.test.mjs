@@ -55,6 +55,7 @@ test('rejects forged cross-tenant rows, invalid hosts and wrong provider capabil
   for (const overrides of [
     { connection: [{ ...row, tenant_id: 'tenant-B' }] },
     { connection: [{ ...row, hostname: 'localhost' }] },
+    { connection: [{ ...row, username: 42 }] },
     { connection: [{ ...row, credential_ref: '../secret' }] },
     { capabilities: [{ capability: 'whm.accounts.list' }] },
     { capabilities: [{ capability: 'cpanel.domains.list' }, { capability: 'cpanel.domains.list' }] },
