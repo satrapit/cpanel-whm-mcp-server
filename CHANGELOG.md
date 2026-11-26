@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added — encrypted envelope read foundation (cloud verified)
+- Centralize the reviewed SQL statements and introduce a mysql2-compatible, allowlisted prepared-query adapter (not yet connected to a real driver or database).
+- Add a tenant/connection-bound, read-only encrypted credential vault and an **unapplied** MariaDB envelope migration with inactive-by-default records.
+- Add 10 new targeted regression tests (query adapter, vault and synthetic end-to-end authorization-to-decryption). Isolated cloud strict TypeScript checks and CommonJS loads passed; actual MariaDB, external KMS and full MCP/OIDC tests remain pending.
+
 
 ### Added — tenant read-model foundation
 - Introduce MariaDB 10.11-compatible tenant, membership, connection, capability and grant schema with default-disabled access; migration is not applied on any host.
