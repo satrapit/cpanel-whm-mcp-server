@@ -142,3 +142,11 @@ pnpm typecheck:core
 `test:passenger-core` compiles only dependency-free core modules into real
 CommonJS JavaScript and loads them with `require()`. It does **not** validate
 the MCP SDK, Fastify, Jose, full Passenger app, or production OAuth integration.
+
+## Tenant-scoped MariaDB read-model (unapplied, offline-tested)
+
+The development branch now includes `sql/001_connections_read_model.sql` and `src/connections/mysql-read-repository.ts`. The schema models tenants, signed-subject memberships, connection metadata (opaque credential references only), verified read capabilities, and explicit per-connection grants. All memberships, grants, capabilities, and connections default to disabled or unverified; only parameterized, tenant-constrained SELECT queries are defined. No tokens or encrypted credentials are stored in these tables.
+
+The repository intentionally remains **disconnected from the HTTP/MCP runtime**. A production SQL driver adapter, controlled migrations against the dedicated MariaDB schema, audited onboarding, independent encrypted KMS-backed vault, rotation/revocation, and real integration tests are still required before removing `DenyAllRepository`. Running the SQL file or populating grants does **not** enable remote provider operations.
+
+Offline checks: `pnpm test:core` includes `tests/mysql-read-repository.test.mjs`, which uses a fake query executor to verify scope, SQL bindings, invalid inputs, grant revocation, capability isolation, and bounded listings. This is *not* a real MariaDB integration test. No production migration was executed.
