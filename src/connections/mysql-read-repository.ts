@@ -67,7 +67,7 @@ export class MySqlReadConnectionRepository implements ConnectionRepository {
     const row = rows[0]!;
     if (row.id !== id || row.tenant_id !== tenantId ||
         (row.kind !== 'cpanel' && row.kind !== 'whm') ||
-        typeof row.hostname !== 'string' || !USERNAME.test(String(row.username)) ||
+        typeof row.hostname !== 'string' || typeof row.username !== 'string' || !USERNAME.test(row.username) ||
         typeof row.credential_ref !== 'string' || !SECRET_REF.test(row.credential_ref)) return null;
     let hostname: string;
     try { hostname = assertHostname(row.hostname); } catch { return null; }
