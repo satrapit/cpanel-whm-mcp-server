@@ -150,3 +150,13 @@ The development branch now includes `sql/001_connections_read_model.sql` and `sr
 The repository intentionally remains **disconnected from the HTTP/MCP runtime**. A production SQL driver adapter, controlled migrations against the dedicated MariaDB schema, audited onboarding, independent encrypted KMS-backed vault, rotation/revocation, and real integration tests are still required before removing `DenyAllRepository`. Running the SQL file or populating grants does **not** enable remote provider operations.
 
 Offline checks: `pnpm test:core` includes `tests/mysql-read-repository.test.mjs`, which uses a fake query executor to verify scope, SQL bindings, invalid inputs, grant revocation, capability isolation, and bounded listings. This is *not* a real MariaDB integration test. No production migration was executed.
+
+## Offline-prepared MariaDB SQL + encrypted credential vault (not deployed)
+
+The security foundation includes exact SQL allowlists (`connection-queries.ts` and `credential-lookup-query.ts`) and a `MySql2PreparedReadSql` bridge that accepts a **mysql2/promise-compatible `execute(sql, values)` pool**. The bridge rejects unreviewed statements, mismatched positional parameters, malformed row sets and database error disclosure. The current project **does not install, instantiate or connect a mysql2 pool**; verified driver installation, a least-privilege read-only database account, connection/TLS timeout configuration and live MariaDB tests are pending.
+
+`MySqlEncryptedCredentialVault` performs a strictly tenant/connection/reference-bound SELECT, verifies returned record ownership, and decrypts an AES-256-GCM envelope via the independently supplied `DataKeyWrapper`. Its key wrapper in offline tests is **synthetic only**. Actual key wrapping requires an external KMS/HSM. Never put the KEK in `.env`, database tables, PHP files or Git.
+
+Migration `sql/002_credential_envelopes.sql` depends on the **unapplied** `sql/001_connections_read_model.sql`; both are proposals and have **not been executed** on any server. Their encrypted-envelope records default to `active=0`. There is intentionally no public provisioning or write API, no configured vault, and no change to runtime `DenyAllRepository`.
+
+Offline test commands: `pnpm test:core` includes the MariaDB query adapter, encrypted vault and synthetic connection-to-vault integration suites. In the standalone cloud TypeScript harness, 15 targeted tests, strict typecheck and actual Node 22 CommonJS module loading passed. These are not a real MCP SDK, KMS or database acceptance test.
