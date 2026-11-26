@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added — remote MariaDB TLS pool bootstrap (offline verified)
+- Pin a mysql2 driver dependency and add an opt-in mysql2/promise pool adapter, currently unwired from the public MCP application.
+- Add strict TLS 1.2+ connection policy, certificate/hostname verification, bounded pool/queue, cipher preflight, and fail-closed cleanup.
+- Add five synthetic pool/TLS regression tests to the isolated core suite and extend CommonJS smoke coverage. 20 targeted cloud storage/security tests passed; live driver/MariaDB integration and full dependency checks remain pending.
+
 ### Added — encrypted envelope read foundation (cloud verified)
 - Centralize the reviewed SQL statements and introduce a mysql2-compatible, allowlisted prepared-query adapter (not yet connected to a real driver or database).
 - Add a tenant/connection-bound, read-only encrypted credential vault and an **unapplied** MariaDB envelope migration with inactive-by-default records.
