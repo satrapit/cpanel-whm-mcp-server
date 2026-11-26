@@ -35,7 +35,7 @@ MCP structured text result
 
 In this initial milestone, persistence and credential vault are **not** implemented. The `DenyAllRepository` and vault stub are intentionally incapable of operating real connections. There is no development-authentication bypass. Although the provider client code exists, a production call path is deliberately disabled until an authenticated onboarding and encrypted secret store are reviewed and tested.
 
-No database tables or migrations were created, as no persistent domain state is in use. MySQL/MariaDB/Prisma and durable encrypted credential storage remain pending. A dependency-free envelope encryption primitive now exists but is **not wired into the runtime**; it requires a separately managed KMS/HSM key wrapper and a tenant-scoped persistent credential repository before any real tokens can be stored. Never store raw provider tokens in the database, environment templates or logs. Owner isolation must be enforced in persistence as well as services.
+No database tables have been deployed; a draft, unapplied MariaDB read-model migration has been added, but no persistent domain state is in use. MySQL/MariaDB/Prisma and durable encrypted credential storage remain pending. A dependency-free envelope encryption primitive now exists but is **not wired into the runtime**; it requires a separately managed KMS/HSM key wrapper and a tenant-scoped persistent credential repository before any real tokens can be stored. Never store raw provider tokens in the database, environment templates or logs. Owner isolation must be enforced in persistence as well as services.
 
 ## Threat model / residual risks
 
