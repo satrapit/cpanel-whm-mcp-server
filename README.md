@@ -160,3 +160,13 @@ The security foundation includes exact SQL allowlists (`connection-queries.ts` a
 Migration `sql/002_credential_envelopes.sql` depends on the **unapplied** `sql/001_connections_read_model.sql`; both are proposals and have **not been executed** on any server. Their encrypted-envelope records default to `active=0`. There is intentionally no public provisioning or write API, no configured vault, and no change to runtime `DenyAllRepository`.
 
 Offline test commands: `pnpm test:core` includes the MariaDB query adapter, encrypted vault and synthetic connection-to-vault integration suites. In the standalone cloud TypeScript harness, 15 targeted tests, strict typecheck and actual Node 22 CommonJS module loading passed. These are not a real MCP SDK, KMS or database acceptance test.
+
+## Strict TLS MariaDB connection pool (development only)
+
+A new opt-in entry at `src/runtime/mysql2-driver.ts` uses the pinned `mysql2/promise` driver (version `3.24.6`) and delegates to the tested `openMariaDbReadBoundary` bootstrap. This is **not called by `src/main.ts`**: all provider operations still fail closed through `DenyAllRepository`.
+
+The dependency-light pool policy rejects IP literals, untrusted hostnames, arbitrary ports and connection strings, invalid credentials/identifiers, and CA data masquerading as paths. Remote connections use port 3306, verified server certificates **and hostname verification**, minimum TLS 1.2, a four-connection pool, a bounded wait queue and a five-second connection timeout. It neither exposes a Unix socket escape hatch nor permits `rejectUnauthorized=false`.
+
+Before returning any repository or vault, the bootstrap obtains a real connection, queries `SHOW SESSION STATUS LIKE 'Ssl_cipher'` and denies connections with no negotiated TLS cipher. On TLS failure, it releases the session and closes the pool; errors are normalized without leaking credentials. The actual hosting deployment should use `host.websitex.net` only after real TLS hostname and CA-chain validation with a dedicated **SELECT-only** MariaDB user. No live credentials are defined in this repository.
+
+`pnpm test:core` now includes five additional cloud-tested mock-driver TLS/bootstrap regressions. Together with earlier tests, 20 targeted storage/security tests passed in an isolated Node 22 + TypeScript 5.8 environment, including a CommonJS load check. **Not yet verified:** the real mysql2 package installation, full repo TypeScript build, lockfile/security audit, live MariaDB connection, external KMS and end-to-end MCP/OIDC. Do not deploy or merge for release until these gates pass.
