@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+### Added — tenant read-model foundation
+- Introduce MariaDB 10.11-compatible tenant, membership, connection, capability and grant schema with default-disabled access; migration is not applied on any host.
+- Add parameterized, tenant-scoped, read-only connection repository port and five offline security tests. Preserve deny-all runtime wiring and external-KMS vault prerequisite.
+
 ### Local verification
 - Add a dependency-free, loopback-only visual diagnostic with live HTTP health/version checks and a bounded synthetic JSON-RPC walkthrough on `/preview/rpc`.
 - Reject all real `/mcp` requests in preview mode, disable provider credentials, and enforce local Host/Origin, CSP and payload limits.
